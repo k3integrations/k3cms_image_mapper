@@ -79,11 +79,13 @@ Internals
     options.toolbox.addClass('imagemap_toolbox').attr('data-for_image_map', options.map_name);
     console.log("options.toolbox=", options.toolbox);
     options.toolbox.append(
-      '<div class="imagemap_tools"> \
-        <div class="imagemap_region_list"></div> \
-        <input class="imagemap_new_region_button"  type="button" value="New Region"/> \
-        <input class="imagemap_save_button"        type="button" value="Save"/> \
-      </div>'
+      '<form id="test"> \
+        <div class="imagemap_tools"> \
+          <div class="imagemap_region_list"></div> \
+          <button class="new_region_button"  type="button">New Region</button> \
+          <button class="save_button"        type="submit">Save</button> \
+        </div> \
+      </form>'
     );
     if (options.onBeforeShowToolbox)
         options.onBeforeShowToolbox.call($img);
@@ -126,7 +128,8 @@ Internals
       create_dot(x, y, offset);
     }
 
-    $('input.imagemap_save_button').click(function(event) {
+    //options.toolbox.find('.save_button').click(function(event) {
+    options.toolbox.find('form').submit(function(event) {
       var e = $.Event('onClickSave', {image_mapper: self})
       $(self).trigger(e);
       if (e.isDefaultPrevented()) { return self; }
@@ -135,9 +138,10 @@ Internals
       // We could just use self here, but the custom callback may have already called destroy, so reload it to be safe.
       image_mapper = $img.data("ImageMapper");
       image_mapper && image_mapper.destroy();
+      event.preventDefault(); // don't try to submit via HTTP!
     });
     
-    $('input.imagemap_new_region_button').click(create_region);
+    options.toolbox.find('.new_region_button').click(create_region);
 
     $.each("onClickSave".split(","), function(i, name) {
 
@@ -426,8 +430,8 @@ Internals
           <label>Region ${i}</label> \
           <img class="imagemap_delete_region" src="/images/k3cms/image_mapper/delete.png"> \
           <div class="imagemap_region_attributes"> \
-            URL:    <input type="text" name="url"><br/> \
-            Target: <input type="text" name="target"> \
+            URL:    <input type="text" name="url" required="required" /><br/> \
+            Target: <input type="text" name="target" /> \
           </div> \
         </div>'
     }
