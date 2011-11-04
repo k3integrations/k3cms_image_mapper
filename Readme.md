@@ -3,10 +3,11 @@ Image Mapper extension for K3cms
 
 Allows you to create an [image map](http://en.wikipedia.org/wiki/Image_map) by drawing polygons directly on your image.
 
-Demo
-====
 
-...
+jquery.image_mapper.js
+======================
+
+See demo/index.html for a stand-alone demo of jquery.image_mapper.js (not in the context of K3cms).
 
 
 License

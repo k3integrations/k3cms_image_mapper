@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>jquery.image_mapper.js demo</title>
+  
+  <script src="jquery.js" type="text/javascript"></script>
+
+  <script src="../public/javascripts/raphael-min.js" type="text/javascript"></script>
+  <script src="../public/javascripts/jquery.tmpl.min.js" type="text/javascript"></script>
+
+  <link  href="../public/stylesheets/jquery.image_mapper.css" media="screen" rel="stylesheet" type="text/css" />
+  <link href="../public/stylesheets/k3cms/image_mapper.css"   media="screen" rel="stylesheet" type="text/css" />
+
+  <script src="../public/javascripts/jquery.image_mapper.js" type="text/javascript"></script>
+
+</head>
+<body>
+  <h1>jquery.image_mapper.js demo</h1>
+  <div id="imagemap_toolbox"><!--  Tools go here  --></div>
+  <div class="editable">
+    <img id="img" src="http://1.bp.blogspot.com/-d7h_mAbHxI0/TZCfvJoKDeI/AAAAAAAAHbw/gvK5xeLOeKg/s400/Polygon.gif">
+  </div>
+  <a id="launch_mapper" href="#">Edit Image Map</a>
+</body>
+</html>
+
+<script type="text/javascript">
+  $('#launch_mapper').click(function() {
+    if (!$('#img').data('ImageMapper')) {
+      $('#img').ImageMapper({
+        //toolbox: $('#imagemap_toolbox')
+      });
+    }
+  });
+</script>
