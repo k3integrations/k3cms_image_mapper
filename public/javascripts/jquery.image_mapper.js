@@ -101,7 +101,31 @@ Internals
     }
     $img.attr('usemap', '#' + options.map_name);
     
-    // Register Save button
+    // Background image is generally clickable to add new points
+    var background = imagemap_paper.rect(0, 0, img_width - 1, img_height - 1);
+    background.toBack();
+    background.attr('fill', 'white');
+    background.attr('fill-opacity', 0);
+    
+    if (get_region_count() == 0) {
+      create_region();
+    }
+    
+    suppress_callbacks = false;
+    if (options.onInitialize) options.onInitialize.call($img);
+
+    //----------------------------------------------------------------------------------------------
+    // Register callbacks
+    
+    background.node.onclick = function(event) {
+      ImageMapper.debug("clicked at: ", event.pageX, '-', $(this).offset().left, ',',
+                                        event.pageY, '-', $(this).offset().top);
+      var x = Math.round(event.pageX - $(this).offset().left);
+      var y = Math.round(event.pageY - $(this).offset().top);
+      var offset = $.browser.mozilla ? -4 : 0;
+      create_dot(x, y, offset);
+    }
+
     $('input.imagemap_save_button').click(function(event) {
       var e = $.Event('onClickSave', {image_mapper: self})
       $(self).trigger(e);
@@ -113,31 +137,8 @@ Internals
       image_mapper && image_mapper.destroy();
     });
     
-    // Register New Region button
     $('input.imagemap_new_region_button').click(create_region);
-    
-    // Background image is generally clickable to add new points
-    var background = imagemap_paper.rect(0, 0, img_width - 1, img_height - 1);
-    background.toBack();
-    background.attr('fill', 'white');
-    background.attr('fill-opacity', 0);
-    
-    background.node.onclick = function(event) {
-      ImageMapper.debug("clicked at: ", event.pageX, '-', $(this).offset().left, ',',
-                                        event.pageY, '-', $(this).offset().top);
-      var x = Math.round(event.pageX - $(this).offset().left);
-      var y = Math.round(event.pageY - $(this).offset().top);
-      var offset = $.browser.mozilla ? -4 : 0;
-      create_dot(x, y, offset);
-    }
-    
-    $img.data('ImageMapper', self);
-    
-    suppress_callbacks = false;
-    if (options.onInitialize) options.onInitialize.call($img);
 
-    //----------------------------------------------------------------------------------------------
-    // Register callbacks
     $.each("onClickSave".split(","), function(i, name) {
 
       if ($.isFunction(options[name])) {
@@ -173,6 +174,7 @@ Internals
   
     function $get_area(i)          { return $map.find('#imagemap_area_' + i); }
 
+    function get_region_count()    { return $get_region_list().find('.imagemap_region').length }
     function $get_region_list()    { return options.toolbox.find('.imagemap_region_list'); }
     // TODO: require a number, i, to be passed in instead of a free-form string value, id
     function $get_region(id)       { return $get_region_list().find('#' + ('_' + id).replace(/^[a-z_]+/, 'imagemap_region_')); }
@@ -198,7 +200,7 @@ Internals
         // Create the <area> tag for the new polygon
         $map.append('<area shape="polygon" id="imagemap_area_' + region_count + '" coords="0,0,0,0">');
       }
-      console.log("$get_region_list()=", $get_region_list());
+      //console.log("$get_region_list()=", $get_region_list());
       $.tmpl('ImageMapper.region_template', {i: region_count}).appendTo($get_region_list());
       
       // Create array for dots
@@ -243,7 +245,7 @@ Internals
       get_polygon(i).remove();
       
       // If the selected region was deleted, select a different one, if found
-      if ($selected_region().length == 0 && $get_region_list().find('.imagemap_region').length > 0) {
+      if ($selected_region().length == 0 && get_region_count() > 0) {
         select_region();
       }
       if (options.onRegionDelete && !suppress_callbacks) options.onRegionDelete.apply($img, [i]);
