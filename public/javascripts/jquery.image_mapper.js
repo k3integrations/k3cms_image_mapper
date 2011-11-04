@@ -77,7 +77,7 @@ Internals
       options.toolbox.css({position: 'absolute', top: pos.top, left: pos.left});
     }
     options.toolbox.addClass('imagemap_toolbox').attr('data-for_image_map', options.map_name);
-    console.log("options.toolbox=", options.toolbox);
+    //console.log("options.toolbox=", options.toolbox);
     options.toolbox.append(
       '<form id="test"> \
         <div class="imagemap_tools"> \
@@ -141,7 +141,7 @@ Internals
       event.preventDefault(); // don't try to submit via HTTP!
     });
     
-    options.toolbox.find('.new_region_button').click(create_region);
+    options.toolbox.find('.new_region_button').click(function() { create_region() });
 
     $.each("onClickSave".split(","), function(i, name) {
 
@@ -183,6 +183,7 @@ Internals
     // TODO: require a number, i, to be passed in instead of a free-form string value, id
     function $get_region(id)       { return $get_region_list().find('#' + ('_' + id).replace(/^[a-z_]+/, 'imagemap_region_')); }
     function $selected_region()    { return $get_region_list().find('.selected'); }
+    function $get_title_input(id)  { return $get_region(id).find(':input[name=title]'); }
     function $get_url_input(id)    { return $get_region(id).find(':input[name=url]'); }
     function $get_target_input(id) { return $get_region(id).find(':input[name=target]'); }
     function selected_region_id()  { return $selected_region().attr('id'); }
@@ -195,17 +196,17 @@ Internals
     
     function create_region(id) {
       // Don't need to create new area if id provided
-      if (id && typeof id == 'string') {
+      if (id) {
         // id may be something like "imagemap_area_1" if this gets called by parse_image_map when an existing image-map already exists, so we strip out just the numeric portion with id_to_i
         // Looks like we're assuming that create_region will *only* be called sequentially (1, 2, 3...), because we actually *set* region_count based on the id passed in.
-        region_count = id_to_i(id);
+        region_count = id;
       } else {
         region_count++;
         // Create the <area> tag for the new polygon
         $map.append('<area shape="polygon" id="imagemap_area_' + region_count + '" coords="0,0,0,0">');
       }
       //console.log("$get_region_list()=", $get_region_list());
-      $.tmpl('ImageMapper.region_template', {i: region_count}).appendTo($get_region_list());
+      $.tmpl('ImageMapper.region_template', {i: region_count, title: 'Region ' + region_count}).appendTo($get_region_list());
       
       // Create array for dots
       dot_lists['region_' + region_count] = new Array();
@@ -219,7 +220,13 @@ Internals
         delete_region(id);
       });
       
-      // Tie url field updates to change the corresponding area attribute
+      // When inputs/fields in the toolbox are updated, automatically update the corresponding attribute in the image map/<area> tag
+      $get_title_input(region_count).change(function() {
+        var i = id_to_i($(this).parents('.imagemap_region').attr('id'))
+        $get_region(i).find('label').html(this.value);
+        $get_area(i).attr('title', this.value);
+        if (options.onRegionChange && !suppress_callbacks) options.onRegionChange.apply($img, [i]);
+      });
       $get_url_input(region_count).change(function() {
         var i = id_to_i($(this).parents('.imagemap_region').attr('id'))
         $get_area(i).attr('href', this.value);
@@ -367,14 +374,19 @@ Internals
     // Called by init when an existing image-map (<map> tag) is found.
     // Reads coordinate data from <map> tag and its <area> tags and renders the editing UI (draws visible, clickable representation of each region/polygon).
     function parse_image_map() {
-      $map.children('area').each(function() {
-        create_region(this.id);
+      $map.children('area').each(function(_i) {
+        // TODO: use class instead of id to store this sequence number
+        create_region(id_to_i(this.id));
         // Make dots
         var points = this.coords.split(',');
         for (var i=0; i<points.length; i+=2) {
           create_dot(parseInt(points[i]), parseInt(points[i + 1]));
         }
         // Update inputs in toolbox with current values from image-map itself
+        // TODO: extract out duplicated code so we can reuse the same setting code that the change handlers use
+        // Which will probably end up being something like $.tmpl('ImageMapper.region_template', {...});
+        $get_title_input(this.id). attr('value', this.title);
+        $get_region(this.id).find('label').html(this.title || 'Region ' + (_i+1));
         $get_url_input(   this.id).attr('value', this.href);
         $get_target_input(this.id).attr('value', this.target);
       });
@@ -427,11 +439,12 @@ Internals
 
       region_template: '\
         <div class="imagemap_region" id="imagemap_region_${i}"> \
-          <label>Region ${i}</label> \
+          <label>${title}</label> \
           <img class="imagemap_delete_region" src="/images/k3cms/image_mapper/delete.png"> \
           <div class="imagemap_region_attributes"> \
-            URL:    <input type="text" name="url" required="required" /><br/> \
-            Target: <input type="text" name="target" /> \
+            Title:  <input type="text" name="title"  value="${title}" /><br/> \
+            URL:    <input type="text" name="url"    value="${url}" required="required" /><br/> \
+            Target: <input type="text" name="target" value="${target}" /> \
           </div> \
         </div>'
     }
